@@ -35,7 +35,12 @@
     <DocumentationFile>bin\Release\Raspberry.IO.InterIntegratedCircuit.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Raspberry.System.2.0.0\lib\net40\Raspberry.System.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="Raspberry.System">
       <HintPath>..\packages\Raspberry.System.1.4.0\lib\net40\Raspberry.System.dll</HintPath>
@@ -45,8 +50,12 @@
     <Compile Include="..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="I2cAction.cs" />
     <Compile Include="I2cDeviceConnection.cs" />
     <Compile Include="I2cDriver.cs" />
+    <Compile Include="I2cReadAction.cs" />
+    <Compile Include="I2cTransaction.cs" />
+    <Compile Include="I2cWriteAction.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

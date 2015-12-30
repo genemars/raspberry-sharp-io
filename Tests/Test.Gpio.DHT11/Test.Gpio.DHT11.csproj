@@ -36,18 +36,24 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Raspberry.System.2.0.0\lib\net40\Raspberry.System.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnitsNet">
-      <HintPath>..\..\packages\UnitsNet.3.4.0\lib\net35\UnitsNet.dll</HintPath>
-    </Reference>
     <Reference Include="Raspberry.System">
       <HintPath>..\..\packages\Raspberry.System.1.4.0\lib\net40\Raspberry.System.dll</HintPath>
+    </Reference>
+    <Reference Include="UnitsNet, Version=3.10.0.235, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\UnitsNet.3.10.0\lib\net35\UnitsNet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

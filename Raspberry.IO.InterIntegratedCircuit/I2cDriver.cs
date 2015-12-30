@@ -47,8 +47,21 @@ namespace Raspberry.IO.InterIntegratedCircuit
             var memoryFile = Interop.open("/dev/mem", Interop.O_RDWR + Interop.O_SYNC);
             try
             {
-                gpioAddress = Interop.mmap(IntPtr.Zero, Interop.BCM2835_BLOCK_SIZE, Interop.PROT_READ | Interop.PROT_WRITE, Interop.MAP_SHARED, memoryFile, Board.Current.Model == '2' ? Interop.BCM2836_GPIO_BASE : Interop.BCM2835_GPIO_BASE);
-                bscAddress = Interop.mmap(IntPtr.Zero, Interop.BCM2835_BLOCK_SIZE, Interop.PROT_READ | Interop.PROT_WRITE, Interop.MAP_SHARED, memoryFile, bscBase);
+                gpioAddress = Interop.mmap(
+                    IntPtr.Zero, 
+                    Interop.BCM2835_BLOCK_SIZE, 
+                    Interop.PROT_READ | Interop.PROT_WRITE, 
+                    Interop.MAP_SHARED, 
+                    memoryFile, 
+                    GetProcessorGpioAddress(Board.Current.Processor));
+                
+                bscAddress = Interop.mmap(
+                    IntPtr.Zero, 
+                    Interop.BCM2835_BLOCK_SIZE, 
+                    Interop.PROT_READ | Interop.PROT_WRITE, 
+                    Interop.MAP_SHARED, 
+                    memoryFile, 
+                    bscBase);
             }
             finally
             {
@@ -129,129 +142,179 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
         #region Internal Methods
 
-        internal void Write(int deviceAddress, byte[] buffer)
+        /// <summary>
+        /// Executes the specified transaction.
+        /// </summary>
+        /// <param name="deviceAddress">The address of the device.</param>
+        /// <param name="transaction">The transaction.</param>
+        internal void Execute(int deviceAddress, I2cTransaction transaction)
         {
             lock (driverLock)
             {
-                EnsureDeviceAddress(deviceAddress);
+                var control = bscAddress + (int)Interop.BCM2835_BSC_C;
 
-                var len = (uint) buffer.Length;
-
-                var dlen = bscAddress + (int) Interop.BCM2835_BSC_DLEN;
-                var fifo = bscAddress + (int) Interop.BCM2835_BSC_FIFO;
-                var status = bscAddress + (int) Interop.BCM2835_BSC_S;
-                var control = bscAddress + (int) Interop.BCM2835_BSC_C;
-
-                var remaining = len;
-                var i = 0;
-
-                // Clear FIFO
-                WriteUInt32Mask(control, Interop.BCM2835_BSC_C_CLEAR_1, Interop.BCM2835_BSC_C_CLEAR_1);
-
-                // Clear Status
-                WriteUInt32(status, Interop.BCM2835_BSC_S_CLKT | Interop.BCM2835_BSC_S_ERR | Interop.BCM2835_BSC_S_DONE);
-
-                // Set Data Length
-                WriteUInt32(dlen, len);
-
-                while (remaining != 0 && i < Interop.BCM2835_BSC_FIFO_SIZE)
+                foreach (I2cAction action in transaction.Actions)
                 {
-                    WriteUInt32(fifo, buffer[i]);
-                    i++;
-                    remaining--;
-                }
-
-                // Enable device and start transfer
-                WriteUInt32(control, Interop.BCM2835_BSC_C_I2CEN | Interop.BCM2835_BSC_C_ST);
-
-                while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_DONE) == 0)
-                {
-                    while (remaining != 0 && (ReadUInt32(status) & Interop.BCM2835_BSC_S_TXD) != 0)
+                    if (action is I2cWriteAction)
                     {
-                        // Write to FIFO, no barrier
-                        WriteUInt32(fifo, buffer[i]);
-                        i++;
-                        remaining--;
+                        Write(deviceAddress, action.Buffer);
                     }
-
-                    Wait(remaining);
-                }
-
-                if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_ERR) != 0) // Received a NACK
-                    throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_NACK status");
-                if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_CLKT) != 0) // Received Clock Stretch Timeout
-                    throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_CLKT status");
-                if (remaining != 0) // Not all data is sent
-                    throw new InvalidOperationException(string.Format("Read operation failed with BCM2835_I2C_REASON_ERROR_DATA status, missing {0} bytes", remaining));
-                
-                WriteUInt32Mask(control, Interop.BCM2835_BSC_S_DONE, Interop.BCM2835_BSC_S_DONE);
-            }
-        }
-
-        internal byte[] Read(int deviceAddress, int byteCount)
-        {
-            lock (driverLock)
-            {
-                EnsureDeviceAddress(deviceAddress);
-
-                var dlen = bscAddress + (int) Interop.BCM2835_BSC_DLEN;
-                var fifo = bscAddress + (int) Interop.BCM2835_BSC_FIFO;
-                var status = bscAddress + (int) Interop.BCM2835_BSC_S;
-                var control = bscAddress + (int) Interop.BCM2835_BSC_C;
-
-                var remaining = (uint) byteCount;
-                uint i = 0;
-
-                // Clear FIFO
-                WriteUInt32Mask(control, Interop.BCM2835_BSC_C_CLEAR_1, Interop.BCM2835_BSC_C_CLEAR_1);
-
-                // Clear Status
-                WriteUInt32(status, Interop.BCM2835_BSC_S_CLKT | Interop.BCM2835_BSC_S_ERR | Interop.BCM2835_BSC_S_DONE);
-
-                // Set Data Length
-                WriteUInt32(dlen, (uint) byteCount);
-
-                // Start read
-                WriteUInt32(control, Interop.BCM2835_BSC_C_I2CEN | Interop.BCM2835_BSC_C_ST | Interop.BCM2835_BSC_C_READ);
-
-                var buffer = new byte[byteCount];
-                while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_DONE) == 0)
-                {
-                    while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_RXD) != 0)
+                    else if (action is I2cReadAction)
                     {
-                        // Read from FIFO, no barrier
-                        buffer[i] = (byte) ReadUInt32(fifo);
-
-                        i++;
-                        remaining--;
+                        Read(deviceAddress, action.Buffer);
                     }
-
-                    Wait(remaining);
+                    else
+                    {
+                        throw new InvalidOperationException("Only read and write transactions are allowed.");
+                    }
                 }
-
-                while (remaining != 0 && (ReadUInt32(status) & Interop.BCM2835_BSC_S_RXD) != 0)
-                {
-                    buffer[i] = (byte) ReadUInt32(fifo);
-                    i++;
-                    remaining--;
-                }
-
-                if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_ERR) != 0) // Received a NACK
-                    throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_NACK status");
-                if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_CLKT) != 0) // Received Clock Stretch Timeout
-                    throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_CLKT status");
-                if (remaining != 0) // Not all data is received
-                    throw new InvalidOperationException(string.Format("Read operation failed with BCM2835_I2C_REASON_ERROR_DATA status, missing {0} bytes", remaining));
 
                 WriteUInt32Mask(control, Interop.BCM2835_BSC_S_DONE, Interop.BCM2835_BSC_S_DONE);
-
-                return buffer;
             }
         }
 
         #endregion
 
         #region Private Helpers
+
+        private void Write(int deviceAddress, byte[] buffer)
+        {
+            this.EnsureDeviceAddress(deviceAddress);
+
+            var len = (uint)buffer.Length;
+
+            var dlen = this.bscAddress + (int)Interop.BCM2835_BSC_DLEN;
+            var fifo = this.bscAddress + (int)Interop.BCM2835_BSC_FIFO;
+            var status = this.bscAddress + (int)Interop.BCM2835_BSC_S;
+            var control = this.bscAddress + (int)Interop.BCM2835_BSC_C;
+
+            var remaining = len;
+            var i = 0;
+
+            // Clear FIFO
+            WriteUInt32Mask(control, Interop.BCM2835_BSC_C_CLEAR_1, Interop.BCM2835_BSC_C_CLEAR_1);
+
+            // Clear Status
+            WriteUInt32(status, Interop.BCM2835_BSC_S_CLKT | Interop.BCM2835_BSC_S_ERR | Interop.BCM2835_BSC_S_DONE);
+
+            // Set Data Length
+            WriteUInt32(dlen, len);
+
+            while (remaining != 0 && i < Interop.BCM2835_BSC_FIFO_SIZE)
+            {
+                WriteUInt32(fifo, buffer[i]);
+                i++;
+                remaining--;
+            }
+
+            // Enable device and start transfer
+            WriteUInt32(control, Interop.BCM2835_BSC_C_I2CEN | Interop.BCM2835_BSC_C_ST);
+
+            while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_DONE) == 0)
+            {
+                while (remaining != 0 && (ReadUInt32(status) & Interop.BCM2835_BSC_S_TXD) != 0)
+                {
+                    // Write to FIFO, no barrier
+                    WriteUInt32(fifo, buffer[i]);
+                    i++;
+                    remaining--;
+                }
+
+                this.Wait(remaining);
+            }
+
+            if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_ERR) != 0) // Received a NACK
+                throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_NACK status");
+            if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_CLKT) != 0) // Received Clock Stretch Timeout
+                throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_CLKT status");
+            if (remaining != 0) // Not all data is sent
+                throw new InvalidOperationException(string.Format("Read operation failed with BCM2835_I2C_REASON_ERROR_DATA status, missing {0} bytes", remaining));
+
+        }
+
+        private void Read(int deviceAddress, byte[] buffer)
+        {
+            this.EnsureDeviceAddress(deviceAddress);
+
+            var dlen = this.bscAddress + (int)Interop.BCM2835_BSC_DLEN;
+            var fifo = this.bscAddress + (int)Interop.BCM2835_BSC_FIFO;
+            var status = this.bscAddress + (int)Interop.BCM2835_BSC_S;
+            var control = this.bscAddress + (int)Interop.BCM2835_BSC_C;
+
+            var remaining = (uint)buffer.Length;
+            uint i = 0;
+
+            // Clear FIFO
+            WriteUInt32Mask(control, Interop.BCM2835_BSC_C_CLEAR_1, Interop.BCM2835_BSC_C_CLEAR_1);
+
+            // Clear Status
+            WriteUInt32(status, Interop.BCM2835_BSC_S_CLKT | Interop.BCM2835_BSC_S_ERR | Interop.BCM2835_BSC_S_DONE);
+
+            // Set Data Length
+            WriteUInt32(dlen, (uint)buffer.Length);
+
+            // Start read
+            WriteUInt32(control, Interop.BCM2835_BSC_C_I2CEN | Interop.BCM2835_BSC_C_ST | Interop.BCM2835_BSC_C_READ);
+
+            while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_DONE) == 0)
+            {
+                while ((ReadUInt32(status) & Interop.BCM2835_BSC_S_RXD) != 0)
+                {
+                    // Read from FIFO, no barrier
+                    buffer[i] = (byte)ReadUInt32(fifo);
+
+                    i++;
+                    remaining--;
+                }
+
+                this.Wait(remaining);
+            }
+
+            while (remaining != 0 && (ReadUInt32(status) & Interop.BCM2835_BSC_S_RXD) != 0)
+            {
+                buffer[i] = (byte)ReadUInt32(fifo);
+                i++;
+                remaining--;
+            }
+
+            if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_ERR) != 0) // Received a NACK
+                throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_NACK status");
+            if ((SafeReadUInt32(status) & Interop.BCM2835_BSC_S_CLKT) != 0) // Received Clock Stretch Timeout
+                throw new InvalidOperationException("Read operation failed with BCM2835_I2C_REASON_ERROR_CLKT status");
+            if (remaining != 0) // Not all data is received
+                throw new InvalidOperationException(string.Format("Read operation failed with BCM2835_I2C_REASON_ERROR_DATA status, missing {0} bytes", remaining));
+
+        }
+
+        private static uint GetProcessorBscAddress(Processor processor)
+        {
+            switch (processor)
+            {
+                case Processor.Bcm2708:
+                    return Interop.BCM2835_BSC1_BASE;
+
+                case Processor.Bcm2709:
+                    return Interop.BCM2836_BSC1_BASE;
+                
+                default:
+                    throw new ArgumentOutOfRangeException("processor");
+            }
+        }
+
+        private static uint GetProcessorGpioAddress(Processor processor)
+        {
+            switch (processor)
+            {
+                case Processor.Bcm2708:
+                    return Interop.BCM2835_GPIO_BASE;
+
+                case Processor.Bcm2709:
+                    return Interop.BCM2836_GPIO_BASE;
+
+                default:
+                    throw new ArgumentOutOfRangeException("processor");
+            }
+        }
 
         private void EnsureDeviceAddress(int deviceAddress)
         {
@@ -268,7 +331,7 @@ namespace Raspberry.IO.InterIntegratedCircuit
         {
             // When remaining data is to be received, then wait for a fully FIFO
             if (remaining != 0)
-                Timer.Sleep(waitInterval * (remaining >= Interop.BCM2835_BSC_FIFO_SIZE ? Interop.BCM2835_BSC_FIFO_SIZE : remaining) / 1000m);
+                Timer.Sleep(TimeSpan.FromMilliseconds(waitInterval * (remaining >= Interop.BCM2835_BSC_FIFO_SIZE ? Interop.BCM2835_BSC_FIFO_SIZE : remaining) / 1000d));
         }
 
         private static int GetWaitInterval(ushort actualDivider)
@@ -282,27 +345,27 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
         private static uint GetBscBase(ProcessorPin sdaPin, ProcessorPin sclPin)
         {
-            switch (GpioConnectionSettings.BoardConnectorRevision)
+            switch (GpioConnectionSettings.ConnectorPinout)
             {
-                case 1:
+                case ConnectorPinout.Rev1:
                     if (sdaPin == ProcessorPin.Pin0 && sclPin == ProcessorPin.Pin1)
                     return Interop.BCM2835_BSC0_BASE;
                     throw new InvalidOperationException("No I2C device exist on the specified pins");
 
-                case 2:
+                case ConnectorPinout.Rev2:
                     if (sdaPin == ProcessorPin.Pin28 && sclPin == ProcessorPin.Pin29)
                         return Interop.BCM2835_BSC0_BASE;
                     if (sdaPin == ProcessorPin.Pin2 && sclPin == ProcessorPin.Pin3)
                         return Interop.BCM2835_BSC1_BASE;
                     throw new InvalidOperationException("No I2C device exist on the specified pins");
 
-                case 3:
+                case ConnectorPinout.Plus:
                     if (sdaPin == ProcessorPin.Pin2 && sclPin == ProcessorPin.Pin3)
-                        return Board.Current.Model == '2' ? Interop.BCM2836_BSC1_BASE : Interop.BCM2835_BSC1_BASE;
+                        return GetProcessorBscAddress(Board.Current.Processor);
                     throw new InvalidOperationException("No I2C device exist on the specified pins");
 
                 default:
-                    throw new NotSupportedException(string.Format(CultureInfo.InvariantCulture, "Board revision {0} is not supported", GpioConnectionSettings.BoardConnectorRevision));
+                    throw new NotSupportedException(string.Format(CultureInfo.InvariantCulture, "Connector pintout {0} is not supported", GpioConnectionSettings.ConnectorPinout));
             }
         }
 
