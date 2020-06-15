@@ -147,7 +147,6 @@ namespace Raspberry.IO.GeneralPurpose
 
             processorMappings = mapping.ToDictionary(p => p.Connector, p => p.Processor);
             connectorMappings = mapping.ToDictionary(p => p.Processor, p => p.Connector);
-Console.WriteLine(GpioConnectionSettings.ConnectorPinout.ToString() + " " + (GpioConnectionSettings.ConnectorPinout == ConnectorPinout.Plus));
         }
 
         static string GetUname()
