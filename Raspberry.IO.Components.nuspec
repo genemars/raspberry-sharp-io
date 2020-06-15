@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>HG.Raspberry.IO.Components</id>
+    <version>2.4.3</version>
+    <title>Raspberry.IO.GeneralPurpose</title>
+    <authors>Eric Bézine, Generoso Martello</authors>
+    <owners>Raspberry-Sharp, genemars</owners>
+    <licenseUrl>http://opensource.org/licenses/GPL-2.0</licenseUrl>
+    <projectUrl>https://github.com/genemars/raspberry-sharp-io</projectUrl>
+    <iconUrl>https://raw.github.com/genemars/raspberry-sharp-io/master/Icon.png</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+      Raspberry.IO.Components.
+    </description>
+    <summary>Raspberry.IO is a set of Mono/.NET assembly providing access to Raspberry Pi I/O features.</summary>
+    <language>en-US</language>
+    <tags>Raspberry Pi Mono GPIO</tags>
+    <dependencies>
+      <dependency id="HG.Raspberry.System" version="2.1.1" />
+      <dependency id="HG.Raspberry.IO.GeneralPurpose" version="2.4.3" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="Raspberry.IO.Components\bin\Release\Raspberry.IO.Components.dll" target="lib\net40" />
+  </files>
+</package>

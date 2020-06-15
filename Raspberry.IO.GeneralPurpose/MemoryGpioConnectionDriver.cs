@@ -19,7 +19,7 @@ namespace Raspberry.IO.GeneralPurpose
         #region Fields
 
         private readonly IntPtr gpioAddress;
-        private readonly Dictionary<ProcessorPin, PinResistor> pinResistors = new Dictionary<ProcessorPin, PinResistor>();  
+        private readonly Dictionary<ProcessorPin, PinResistor> pinResistors = new Dictionary<ProcessorPin, PinResistor>();
 
         /// <summary>
         /// The default timeout (5 seconds).
@@ -38,10 +38,10 @@ namespace Raspberry.IO.GeneralPurpose
         public MemoryGpioConnectionDriver() {
             using (var memoryFile = UnixFile.Open("/dev/mem", UnixFileMode.ReadWrite | UnixFileMode.Synchronized)) {
                 gpioAddress = MemoryMap.Create(
-                    IntPtr.Zero, 
+                    IntPtr.Zero,
                     Interop.BCM2835_BLOCK_SIZE,
-                    MemoryProtection.ReadWrite, 
-                    MemoryFlags.Shared, 
+                    MemoryProtection.ReadWrite,
+                    MemoryFlags.Shared,
                     memoryFile.Descriptor,
                     GetProcessorBaseAddress(Board.Current.Processor));
             }
@@ -55,7 +55,7 @@ namespace Raspberry.IO.GeneralPurpose
         {
             MemoryMap.Close(gpioAddress, Interop.BCM2835_BLOCK_SIZE);
         }
-        
+
         #endregion
 
         #region Methods
@@ -252,6 +252,8 @@ namespace Raspberry.IO.GeneralPurpose
 
                 case Processor.Bcm2709:
                     return Interop.BCM2836_GPIO_BASE;
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_GPIO_BASE;
 
                 default:
                     throw new ArgumentOutOfRangeException("processor");

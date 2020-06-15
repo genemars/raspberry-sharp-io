@@ -9,6 +9,7 @@ namespace Raspberry.IO.GeneralPurpose
 {
     internal static class Interop
     {
+
         #region BCM2835
 
         #region Constants
@@ -17,11 +18,16 @@ namespace Raspberry.IO.GeneralPurpose
         public const uint BCM2835_GPIO_BASE = (BCM2835_PERI_BASE + 0x200000);
         public const uint BCM2835_BSC0_BASE = (BCM2835_PERI_BASE + 0x205000);
         public const uint BCM2835_BSC1_BASE = (BCM2835_PERI_BASE + 0x804000);
-        
+
         public const uint BCM2836_PERI_BASE = 0x3F000000;
         public const uint BCM2836_GPIO_BASE = (BCM2836_PERI_BASE + 0x200000);
         public const uint BCM2836_BSC0_BASE = (BCM2836_PERI_BASE + 0x205000);
         public const uint BCM2836_BSC1_BASE = (BCM2836_PERI_BASE + 0x804000);
+
+        public const uint BCM2711_PERI_BASE = 0xFE000000;
+        public const uint BCM2711_GPIO_BASE = (BCM2711_PERI_BASE + 0x200000);
+        public const uint BCM2711_BSC0_BASE = (BCM2711_PERI_BASE + 0x205000);
+        public const uint BCM2711_BSC1_BASE = (BCM2711_PERI_BASE + 0x804000);
 
         public const uint BCM2835_BLOCK_SIZE = (4 * 1024);
 
@@ -69,7 +75,7 @@ namespace Raspberry.IO.GeneralPurpose
         #endregion
 
         #region Libc
-        
+
         #region Constants
 
         public const int EPOLLIN = 1;

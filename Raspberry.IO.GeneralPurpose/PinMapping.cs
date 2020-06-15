@@ -67,7 +67,7 @@ namespace Raspberry.IO.GeneralPurpose
                     new {Processor = ProcessorPin.Pin31, Connector = ConnectorPin.CB3_CN9Pin13},
                     new {Processor = ProcessorPin.Pin32, Connector = ConnectorPin.CB3_CN9Pin14}
                 };
-            } 
+            }
             else
             {
                 if (GpioConnectionSettings.ConnectorPinout ==  ConnectorPinout.Rev1)
@@ -147,7 +147,7 @@ namespace Raspberry.IO.GeneralPurpose
 
             processorMappings = mapping.ToDictionary(p => p.Connector, p => p.Processor);
             connectorMappings = mapping.ToDictionary(p => p.Processor, p => p.Connector);
-
+Console.WriteLine(GpioConnectionSettings.ConnectorPinout.ToString() + " " + (GpioConnectionSettings.ConnectorPinout == ConnectorPinout.Plus));
         }
 
         static string GetUname()
@@ -187,7 +187,7 @@ namespace Raspberry.IO.GeneralPurpose
             ProcessorPin processorPin;
             if (!processorMappings.TryGetValue(pin, out processorPin))
                 throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Connector pin {0} is not mapped to processor with pin layout revision {1}", pin.ToString().Replace("Pin", "-"), GpioConnectionSettings.ConnectorPinout));
-            
+
             return processorPin;
         }
 
@@ -201,7 +201,7 @@ namespace Raspberry.IO.GeneralPurpose
             ConnectorPin connectorPin;
             if (!connectorMappings.TryGetValue(pin, out connectorPin))
                 throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Processor pin {0} is not mapped to processor with pin layout revision {1}", (int) pin, GpioConnectionSettings.ConnectorPinout));
-            
+
             return connectorPin;
         }
 

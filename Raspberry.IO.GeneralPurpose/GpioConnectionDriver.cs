@@ -47,10 +47,10 @@ namespace Raspberry.IO.GeneralPurpose
         public GpioConnectionDriver() {
             using (var memoryFile = UnixFile.Open("/dev/mem", UnixFileMode.ReadWrite | UnixFileMode.Synchronized)) {
                 gpioAddress = MemoryMap.Create(
-                    IntPtr.Zero, 
+                    IntPtr.Zero,
                     Interop.BCM2835_BLOCK_SIZE,
                     MemoryProtection.ReadWrite,
-                    MemoryFlags.Shared, 
+                    MemoryFlags.Shared,
                     memoryFile.Descriptor,
                     GetProcessorBaseAddress(Board.Current.Processor));
             }
@@ -296,6 +296,8 @@ namespace Raspberry.IO.GeneralPurpose
 
                 case Processor.Bcm2709:
                     return Interop.BCM2836_GPIO_BASE;
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_GPIO_BASE;
 
                 default:
                     throw new ArgumentOutOfRangeException("processor");
@@ -306,10 +308,10 @@ namespace Raspberry.IO.GeneralPurpose
         {
             if (timeout > TimeSpan.Zero)
                 return timeout;
-            
+
             if (timeout < TimeSpan.Zero)
                 return MinimumTimeout;
-            
+
             return DefaultTimeout;
         }
 
@@ -328,7 +330,7 @@ namespace Raspberry.IO.GeneralPurpose
                     throw new IOException("Call to epoll_create(1) API failed with the following return value: " + pinPoll.PollDescriptor);
 
                 var valuePath = Path.Combine(gpioPath, string.Format("gpio{0}/value", (int)pin));
-                
+
                 pinPoll.FileDescriptor = UnixFile.OpenFileDescriptor(valuePath, UnixFileMode.ReadOnly | UnixFileMode.NonBlocking);
 
                 var ev = new Interop.epoll_event

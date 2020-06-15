@@ -21,6 +21,8 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
         private readonly ProcessorPin sdaPin;
         private readonly ProcessorPin sclPin;
+        private readonly bool wasSdaPinSet;
+        private readonly bool wasSclPinSet;
 
         private readonly IntPtr gpioAddress;
         private readonly IntPtr bscAddress;
@@ -48,19 +50,19 @@ namespace Raspberry.IO.InterIntegratedCircuit
             try
             {
                 gpioAddress = Interop.mmap(
-                    IntPtr.Zero, 
-                    Interop.BCM2835_BLOCK_SIZE, 
-                    Interop.PROT_READ | Interop.PROT_WRITE, 
-                    Interop.MAP_SHARED, 
-                    memoryFile, 
+                    IntPtr.Zero,
+                    Interop.BCM2835_BLOCK_SIZE,
+                    Interop.PROT_READ | Interop.PROT_WRITE,
+                    Interop.MAP_SHARED,
+                    memoryFile,
                     GetProcessorGpioAddress(Board.Current.Processor));
-                
+
                 bscAddress = Interop.mmap(
-                    IntPtr.Zero, 
-                    Interop.BCM2835_BLOCK_SIZE, 
-                    Interop.PROT_READ | Interop.PROT_WRITE, 
-                    Interop.MAP_SHARED, 
-                    memoryFile, 
+                    IntPtr.Zero,
+                    Interop.BCM2835_BLOCK_SIZE,
+                    Interop.PROT_READ | Interop.PROT_WRITE,
+                    Interop.MAP_SHARED,
+                    memoryFile,
                     bscBase);
             }
             finally
@@ -72,8 +74,9 @@ namespace Raspberry.IO.InterIntegratedCircuit
                 throw new InvalidOperationException("Unable to access device memory");
 
             // Set the I2C pins to the Alt 0 function to enable I2C access on them
-            SetPinMode((uint) (int) sdaPin, Interop.BCM2835_GPIO_FSEL_ALT0); // SDA
-            SetPinMode((uint) (int) sclPin, Interop.BCM2835_GPIO_FSEL_ALT0); // SCL
+            // remembers if the values were actually changed to clear them or not upon dispose
+            wasSdaPinSet = SetPinMode((uint)(int)sdaPin, Interop.BCM2835_GPIO_FSEL_ALT0); // SDA
+            wasSclPinSet = SetPinMode((uint) (int) sclPin, Interop.BCM2835_GPIO_FSEL_ALT0); // SCL
 
             // Read the clock divider register
             var dividerAddress = bscAddress + (int) Interop.BCM2835_BSC_DIV;
@@ -89,9 +92,15 @@ namespace Raspberry.IO.InterIntegratedCircuit
         /// </summary>
         public void Dispose()
         {
-            // Set all the I2C/BSC1 pins back to input
-            SetPinMode((uint) (int) sdaPin, Interop.BCM2835_GPIO_FSEL_INPT); // SDA
-            SetPinMode((uint) (int) sclPin, Interop.BCM2835_GPIO_FSEL_INPT); // SCL
+            // Set all the I2C/BSC1 pins back to original values if changed
+            if (wasSdaPinSet)
+            {
+                SetPinMode((uint)(int)sdaPin, Interop.BCM2835_GPIO_FSEL_INPT); // SDA
+            }
+            if (wasSclPinSet)
+            {
+                SetPinMode((uint)(int)sclPin, Interop.BCM2835_GPIO_FSEL_INPT); // SCL
+            }
 
             Interop.munmap(gpioAddress, Interop.BCM2835_BLOCK_SIZE);
             Interop.munmap(bscAddress, Interop.BCM2835_BLOCK_SIZE);
@@ -295,7 +304,9 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
                 case Processor.Bcm2709:
                     return Interop.BCM2836_BSC1_BASE;
-                
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_BSC1_BASE;
+
                 default:
                     throw new ArgumentOutOfRangeException("processor");
             }
@@ -310,6 +321,8 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
                 case Processor.Bcm2709:
                     return Interop.BCM2836_GPIO_BASE;
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_GPIO_BASE;
 
                 default:
                     throw new ArgumentOutOfRangeException("processor");
@@ -365,11 +378,17 @@ namespace Raspberry.IO.InterIntegratedCircuit
                     throw new InvalidOperationException("No I2C device exist on the specified pins");
 
                 default:
-                    throw new NotSupportedException(string.Format(CultureInfo.InvariantCulture, "Connector pintout {0} is not supported", GpioConnectionSettings.ConnectorPinout));
+                    throw new NotSupportedException(string.Format(CultureInfo.InvariantCulture, "Connector pinout {0} is not supported", GpioConnectionSettings.ConnectorPinout));
             }
         }
 
-        private void SetPinMode(uint pin, uint mode)
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="pin"></param>
+        /// <param name="mode"></param>
+        /// <returns>True when value was changed, false otherwise.</returns>
+        private bool SetPinMode(uint pin, uint mode)
         {
             // Function selects are 10 pins per 32 bit word, 3 bits per pin
             var paddr = gpioAddress + (int) (Interop.BCM2835_GPFSEL0 + 4*(pin/10));
@@ -377,7 +396,17 @@ namespace Raspberry.IO.InterIntegratedCircuit
             var mask = Interop.BCM2835_GPIO_FSEL_MASK << (int) shift;
             var value = mode << (int) shift;
 
-            WriteUInt32Mask(paddr, value, mask);
+            var existing = ReadUInt32(paddr) & mask;
+            if (existing != value)
+            {
+                //Console.WriteLine($"existing is {x} masked:{x & mask} vs mask:{mask} value:{value}");
+                WriteUInt32Mask(paddr, value, mask);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private static void WriteUInt32Mask(IntPtr address, uint value, uint mask)
@@ -399,7 +428,7 @@ namespace Raspberry.IO.InterIntegratedCircuit
                 return returnValue;
             }
         }
-        
+
         private static uint ReadUInt32(IntPtr address)
         {
             unchecked

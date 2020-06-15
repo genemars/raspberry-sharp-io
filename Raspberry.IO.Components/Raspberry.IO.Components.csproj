@@ -11,9 +11,6 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
-    <ProductVersion>12.0.0</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,29 +30,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Common.Logging, Version=3.1.0.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Common.Logging.3.1.0\lib\net40\Common.Logging.dll</HintPath>
-    </Reference>
-    <Reference Include="Common.Logging.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Common.Logging.Core.3.1.0\lib\net40\Common.Logging.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Raspberry.System.2.0.0\lib\net40\Raspberry.System.dll</HintPath>
+    <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\HG.Raspberry.System.2.1.1\lib\net40\Raspberry.System.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="UnitsNet">
-      <HintPath>..\packages\UnitsNet.3.10.0\lib\net35\UnitsNet.dll</HintPath>
+    <Reference Include="System.Configuration" />
+    <Reference Include="Common.Logging.Core">
+      <HintPath>$(SolutionDir)packages\Common.Logging.Core.3.3.1\lib\net40\Common.Logging.Core.dll</HintPath>
     </Reference>
-    <Reference Include="UnitsNet">
-      <HintPath>..\packages\UnitsNet.3.10.0\lib\net35\UnitsNet.dll</HintPath>
+    <Reference Include="Common.Logging">
+      <HintPath>$(SolutionDir)packages\Common.Logging.3.3.1\lib\net40\Common.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="UnitsNet, Version=3.46.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>$(SolutionDir)packages\UnitsNet.3.46.1\lib\net35\UnitsNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -63,6 +52,7 @@
     <Compile Include="..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Clocks\Ds1307Connection.cs" />
     <Compile Include="Controllers\Tlc59711\ExtensionMethods\ByteExtensionMethods.cs" />
     <Compile Include="Controllers\Tlc59711\IPwmChannels.cs" />
     <Compile Include="Controllers\Tlc59711\IPwmDevice.cs" />
@@ -109,6 +99,7 @@
     <Compile Include="Displays\Hd44780\Hd44780LcdConnection.cs" />
     <Compile Include="Displays\Hd44780\Hd44780LcdConnectionSettings.cs" />
     <Compile Include="Displays\Hd44780\Hd44780Pins.cs" />
+    <Compile Include="Displays\Hd44780\Hd44780Position.cs" />
     <Compile Include="Displays\Ssd1306\ScrollDirection.cs" />
     <Compile Include="Displays\Ssd1306\ScrollSpeed.cs" />
     <Compile Include="Expanders\Mcp23008\Mcp23008I2cConnection.cs" />
@@ -161,6 +152,8 @@
     <Compile Include="Displays\Sda5708\Sda5708Brightness.cs" />
     <Compile Include="Displays\Sda5708\Sda5708Connection.cs" />
     <Compile Include="Displays\Sda5708\Sda5708Font.cs" />
+    <Compile Include="Controllers\HT16K33\HT16K33Connection.cs" />
+    <Compile Include="Leds\BiColor24Bargraph\BiColor24Bargraph.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Raspberry.IO.InterIntegratedCircuit\Raspberry.IO.InterIntegratedCircuit.csproj">
@@ -175,14 +168,13 @@
       <Project>{326342E5-0411-40E8-9F2D-563D6B192568}</Project>
       <Name>Raspberry.IO.SerialPeripheralInterface</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Raspberry.IO\Raspberry.IO.csproj">
-      <Project>{ACE64F17-87E5-43E7-97A0-BDDE19059C61}</Project>
-      <Project>{D2E41147-5BF6-4109-A497-C76284F3C020}</Project>
-      <Name>Raspberry.IO</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Raspberry.IO.GeneralPurpose\Raspberry.IO.GeneralPurpose.csproj">
       <Project>{281C71ED-C36D-408E-8BAA-75C381DC17E7}</Project>
       <Name>Raspberry.IO.GeneralPurpose</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Raspberry.IO\Raspberry.IO.csproj">
+      <Project>{ACE64F17-87E5-43E7-97A0-BDDE19059C61}</Project>
+      <Name>Raspberry.IO</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -191,7 +183,6 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -199,6 +190,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup />
   <ItemGroup />
   <ItemGroup />
 </Project>
