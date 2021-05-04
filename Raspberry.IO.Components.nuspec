@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>HG.Raspberry.IO.Components</id>
-    <version>2.4.3</version>
+    <version>2.4.4</version>
     <title>Raspberry.IO.GeneralPurpose</title>
     <authors>Eric Bézine, Generoso Martello</authors>
     <owners>Raspberry-Sharp, genemars</owners>
-    <licenseUrl>http://opensource.org/licenses/GPL-2.0</licenseUrl>
+    <licenseUrl>https://opensource.org/licenses/GPL-2.0</licenseUrl>
     <projectUrl>https://github.com/genemars/raspberry-sharp-io</projectUrl>
     <iconUrl>https://raw.github.com/genemars/raspberry-sharp-io/master/Icon.png</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
