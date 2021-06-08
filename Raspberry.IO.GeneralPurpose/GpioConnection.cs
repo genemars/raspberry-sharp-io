@@ -535,6 +535,9 @@ namespace Raspberry.IO.GeneralPurpose
 
         private void CheckInputPins()
         {
+            if (Driver == null)
+                return;
+            
             var newPinValues = Driver.Read(inputPins);
             
             var changes = newPinValues ^ pinRawValues;
