@@ -160,10 +160,10 @@ namespace Raspberry.IO.GeneralPurpose
         /// <returns>The best driver, if found; otherwise, <c>null</c>.</returns>
         public static IGpioConnectionDriver GetBestDriver(GpioConnectionDriverCapabilities capabilities)
         {
-            if ((GpioConnectionDriver.GetCapabilities() & capabilities) == capabilities)
-                return new GpioConnectionDriver();
             if ((MemoryGpioConnectionDriver.GetCapabilities() & capabilities) == capabilities)
                 return new MemoryGpioConnectionDriver();
+            if ((GpioConnectionDriver.GetCapabilities() & capabilities) == capabilities)
+                return new GpioConnectionDriver();
             if ((FileGpioConnectionDriver.GetCapabilities() & capabilities) == capabilities)
                 return new FileGpioConnectionDriver();
 

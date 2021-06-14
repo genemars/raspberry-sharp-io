@@ -46,7 +46,12 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
             var bscBase = GetBscBase(sdaPin, sclPin);
 
-            var memoryFile = Interop.open("/dev/mem", Interop.O_RDWR + Interop.O_SYNC);
+            string memFilePath = "/dev/gpiomem";
+            if (Interop.access("/dev/gpiomem", 0) != 0)
+            {
+                memFilePath = "/dev/mem";
+            }
+            var memoryFile = Interop.open(memFilePath, Interop.O_RDWR + Interop.O_SYNC);
             try
             {
                 gpioAddress = Interop.mmap(
@@ -297,36 +302,12 @@ namespace Raspberry.IO.InterIntegratedCircuit
 
         private static uint GetProcessorBscAddress(Processor processor)
         {
-            switch (processor)
-            {
-                case Processor.Bcm2708:
-                    return Interop.BCM2835_BSC1_BASE;
-
-                case Processor.Bcm2709:
-                    return Interop.BCM2836_BSC1_BASE;
-                case Processor.Bcm2711:
-                    return Interop.BCM2711_BSC1_BASE;
-
-                default:
-                    throw new ArgumentOutOfRangeException("processor");
-            }
+            return Interop.GetProcessorBscAddress(processor);
         }
 
         private static uint GetProcessorGpioAddress(Processor processor)
         {
-            switch (processor)
-            {
-                case Processor.Bcm2708:
-                    return Interop.BCM2835_GPIO_BASE;
-
-                case Processor.Bcm2709:
-                    return Interop.BCM2836_GPIO_BASE;
-                case Processor.Bcm2711:
-                    return Interop.BCM2711_GPIO_BASE;
-
-                default:
-                    throw new ArgumentOutOfRangeException("processor");
-            }
+            return Interop.GetProcessorGpioBaseAddress(processor);
         }
 
         private void EnsureDeviceAddress(int deviceAddress)

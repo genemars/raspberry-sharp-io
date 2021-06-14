@@ -1,4 +1,5 @@
 #region References
+#pragma warning disable 1591
 
 using System;
 using System.Runtime.InteropServices;
@@ -7,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Raspberry.IO.GeneralPurpose
 {
-    internal static class Interop
+    public static class Interop
     {
 
         #region BCM2835
@@ -85,6 +86,15 @@ namespace Raspberry.IO.GeneralPurpose
         public const int EPOLL_CTL_ADD = 0x1;
         public const int EPOLL_CTL_DEL = 0x2;
 
+        public const int O_RDWR = 2;
+        public const int O_SYNC = 10000;
+
+        public const int PROT_READ = 1;
+        public const int PROT_WRITE = 2;
+
+        public const int MAP_SHARED = 1;
+        public const int MAP_FAILED = -1;
+
         #endregion
 
         #region Methods
@@ -97,6 +107,21 @@ namespace Raspberry.IO.GeneralPurpose
 
         [DllImport("libc.so.6", EntryPoint = "epoll_wait")]
         public static extern int epoll_wait(int epfd, IntPtr events, int maxevents, int timeout);
+
+        [DllImport("libc.so.6", EntryPoint = "open")]
+        public static extern IntPtr open(string fileName, int mode);
+
+        [DllImport("libc.so.6", EntryPoint = "close")]
+        public static extern void close(IntPtr file);
+
+        [DllImport("libc.so.6", EntryPoint = "access")]
+        public static extern int access(string fileName, int mode); // F_OK = 0, R_OK = 4, W_OK = 2, X_OK = 1 
+
+        [DllImport("libc.so.6", EntryPoint = "mmap")]
+        public static extern IntPtr mmap(IntPtr address, uint size, int protect, int flags, IntPtr file, uint offset);
+
+        [DllImport("libc.so.6", EntryPoint = "munmap")]
+        public static extern IntPtr munmap(IntPtr address, uint size);
 
         #endregion
 
@@ -117,5 +142,48 @@ namespace Raspberry.IO.GeneralPurpose
         };
 
         #endregion
+        
+        
+        #region Utility methods
+
+        public static uint GetProcessorGpioBaseAddress(Processor processor)
+        {
+            switch (processor)
+            {
+                case Processor.Bcm2708:
+                case Processor.Bcm2835:
+                    return Interop.BCM2835_GPIO_BASE;
+
+                case Processor.Bcm2709:
+                    return Interop.BCM2836_GPIO_BASE;
+
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_GPIO_BASE;
+
+                default:
+                    throw new ArgumentOutOfRangeException("processor");
+            }
+        }
+        
+        public static uint GetProcessorBscAddress(Processor processor)
+        {
+            switch (processor)
+            {
+                case Processor.Bcm2708:
+                case Processor.Bcm2835:
+                    return Interop.BCM2835_BSC1_BASE;
+
+                case Processor.Bcm2709:
+                    return Interop.BCM2836_BSC1_BASE;
+                case Processor.Bcm2711:
+                    return Interop.BCM2711_BSC1_BASE;
+
+                default:
+                    throw new ArgumentOutOfRangeException("processor");
+            }
+        }
+        
+        #endregion
     }
+    
 }

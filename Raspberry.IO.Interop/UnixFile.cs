@@ -14,6 +14,8 @@ namespace Raspberry.IO.Interop
         private static extern int open(string fileName, int mode);
         [DllImport("libc.so.6", EntryPoint = "close")]
         private static extern int close(int file);
+        [DllImport("libc.so.6", EntryPoint = "access")]
+        private static extern int access(string fileName, int mode); // F_OK = 0, R_OK = 4, W_OK = 2, X_OK = 1 
         #endregion
 
         #region Fields
@@ -67,6 +69,16 @@ namespace Raspberry.IO.Interop
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Checks if a file exists.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static bool Exists(string fileName)
+        {
+            return access(fileName, 0) == 0;
+        }
+        
         /// <summary>
         /// Opens a UNIX file.
         /// </summary>

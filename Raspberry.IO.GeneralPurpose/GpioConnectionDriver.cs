@@ -44,8 +44,14 @@ namespace Raspberry.IO.GeneralPurpose
         /// <summary>
         /// Initializes a new instance of the <see cref="GpioConnectionDriver"/> class.
         /// </summary>
-        public GpioConnectionDriver() {
-            using (var memoryFile = UnixFile.Open("/dev/mem", UnixFileMode.ReadWrite | UnixFileMode.Synchronized)) {
+        public GpioConnectionDriver()
+        {
+            string memFilePath = "/dev/gpiomem";
+            if (!UnixFile.Exists("/dev/gpiomem"))
+            {
+                memFilePath = "/dev/mem";
+            }
+            using (var memoryFile = UnixFile.Open(memFilePath, UnixFileMode.ReadWrite | UnixFileMode.Synchronized)) {
                 gpioAddress = MemoryMap.Create(
                     IntPtr.Zero,
                     Interop.BCM2835_BLOCK_SIZE,
@@ -289,19 +295,7 @@ namespace Raspberry.IO.GeneralPurpose
 
         private static uint GetProcessorBaseAddress(Processor processor)
         {
-            switch (processor)
-            {
-                case Processor.Bcm2708:
-                    return Interop.BCM2835_GPIO_BASE;
-
-                case Processor.Bcm2709:
-                    return Interop.BCM2836_GPIO_BASE;
-                case Processor.Bcm2711:
-                    return Interop.BCM2711_GPIO_BASE;
-
-                default:
-                    throw new ArgumentOutOfRangeException("processor");
-            }
+            return Interop.GetProcessorGpioBaseAddress(processor);
         }
 
         private static TimeSpan GetActualTimeout(TimeSpan timeout)

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>HG.Raspberry.IO.SerialPeripheralInterface</id>
-    <version>2.4.4</version>
+    <version>2.4.5</version>
     <title>Raspberry.IO.GeneralPurpose</title>
     <authors>Eric Bézine, Generoso Martello</authors>
     <owners>Raspberry-Sharp, genemars</owners>
@@ -18,7 +18,7 @@
     <tags>Raspberry Pi Mono GPIO</tags>
     <dependencies>
       <dependency id="HG.Raspberry.System" version="2.1.1" />
-      <dependency id="HG.Raspberry.IO.GeneralPurpose" version="2.4.4" />
+      <dependency id="HG.Raspberry.IO.GeneralPurpose" version="2.4.5" />
     </dependencies>
   </metadata>
   <files>
